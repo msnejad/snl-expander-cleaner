@@ -1,2 +1,2 @@
 # snl-expander
-Facilitates downloading data from SNL in Excel by expanding columns time-wise
+Using the wizard of SNL addin in excel is complicated, especcially when you need same data for several of periods. This excel VBA code allows you to first retrieve pariticular data for only one period, then expand it for as many periods as you need.
