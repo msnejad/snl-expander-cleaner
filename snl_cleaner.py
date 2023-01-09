@@ -64,7 +64,7 @@ def organize_snl_export(csv_file_path, vars_renaming_dict=None, vars_modifiers_r
     :return: This function organizes the SNL exported tables to three subtables:
         1. df_subset_no_modifier is a COCODE-VAR-DATE-VALUE table for observations with no VAR_MODIFIER
         2. df_subset_with_modifier is a COCODE-VAR-VAR_MODIFIER-DATE-VALUE table for observations with VAR_MODIFIER
-        3. df_subset_with_modifier_state is a COCODE-VAR-VAR_MODIFIER-STATE-DATE-VALUE table for observations with
+        3. df_subset_with_modifier_by_state is a COCODE-VAR-VAR_MODIFIER-STATE-DATE-VALUE table for observations with
          VAR_MODIFIER and STATE
     """
     df = pd.read_csv(csv_file_path, encoding_errors='ignore', header=None, low_memory=False)  # Read the csv file
