@@ -108,6 +108,12 @@ Sub snl_expander()
 
     Loop
 
+    'Delete the button
+    Dim btn As Button
+    For Each btn In uws.Buttons
+        btn.Delete
+    Next btn
+    
     'Update table formula
     last_col_num = Cells(2, Columns.Count).End(xlToLeft).Column
     last_col_letter = Split(Cells(1, last_col_num).Address, "$")(1)
