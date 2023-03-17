@@ -5,6 +5,7 @@ naic_forms_variables_renaming = {'Net Total Assets ($000)': 'ASSETS',
                                  'Total Liabilities ($000)': 'LIAB',
                                  'Net Income ($000)': 'NI',
                                  'Net Underwriting Gains ($000)': 'NUG',
+                                 'Gross Premiums Written ($000)': 'GPW',
                                  'Net Premiums Written ($000)': 'NPW',
                                  'Net Premiums Earned ($000)': 'NPE',
                                  'Direct Premiums Written ($000)': 'DPW',
@@ -17,13 +18,13 @@ naic_forms_variables_renaming = {'Net Total Assets ($000)': 'ASSETS',
                                  'Bonds: Short Term and Cash Equivalent Bonds ($000)': 'SBONDS_CV',
                                  'Pref Stock: Carrying Value ($000)': 'PS_CV',
                                  'Cash Cash Equivalent and Short Term Assets ($000)': 'CASH',
-                                 'Auth Control Level Risk Based Capital ($000)': 'RBC',
+                                 'Auth Control Level Risk Based Capital ($000)': 'Auth_RBC',
                                  'Adjusted Capital ($000)': 'ADJCAP',
+                                 'ACL Risk Based Capital Ratio (%)': 'RBC',                                 
                                  'Net Adm Cash & Invested Assets ($000)': 'ADM_CASH_INVSTD_ASSETS',
                                  'Subtotal: Cash & Invested Assets ($000)': 'CASH_INVSTD_ASSETS',
                                  'Dividends Paid on Direct Business ($000)': 'DIV',
                                  'Direct Simple Loss & Loss Adj Exp Ratio (%)': 'LAE_RATIO',
-                                 'ACL Risk Based Capital Ratio (%)': 'RBC',
                                  'Cash, Equivalents and ST Inv: Gross Inv Holding ($000)': 'CASH_EQV_ST_INV',
                                  'Common Stocks: Gross Investment Holding ($000)': 'COM_STOCK',
                                  'Invested Assets: Gross Investment Holding ($000)': 'TOTAL_INV',
@@ -35,7 +36,8 @@ naic_forms_variables_renaming = {'Net Total Assets ($000)': 'ASSETS',
                                  "Balance Sheet Date of Financial Exam by Regulator MM/dd/yyyy": "last_finexam_balance_sheet_date",
                                  "Date Last Reg Financl Exam Rpt Publicly Available MM/dd/yyyy": "last_finexam_report_date",
                                  "Adj from Last Financial Exam Shown In Fncl Stmts? Yes/No": "is_finexam_adjusted",
-                                 "Guidance from Latest Fncl Exam Rpt Complied with? Yes/No": "is_finexam_guidance_complied"
+                                 "Guidance from Latest Fncl Exam Rpt Complied with? Yes/No": "is_finexam_guidance_complied",
+                                 'NAIC Group Number ': 'GCODE',
                                  }
 
 naic_forms_variable_modifiers_renaming = {'AR: Total All Lines': 'ALL_LINES',
@@ -83,27 +85,35 @@ def organize_snl_export(csv_file_path, vars_renaming_dict=None, vars_modifiers_r
     df.columns = ['COCODE', 'VAR', 'VAR_MODIFIER', 'DATE', 'VALUE']
     df = df[~df.COCODE.isna()]  # Drop rows with no COCODE
     df.loc[:, "VAR_MODIFIER"] = df["VAR_MODIFIER"].replace({'PY(0)': np.nan})
-    df[["VAR_MODIFIER", "STATE"]] = df. \
-        VAR_MODIFIER.str.split("|", expand=True)  # Split VAR_MODIFIER into VAR_MODIFIER and STATE
-    df["STATE"] = df["STATE"].str.split(":", expand=True)[1]  # Fix STATE column
+
     if vars_renaming_dict is not None:
         df.loc[:, "VAR"] = df["VAR"].replace(vars_renaming_dict)  # Rename variables
-    if vars_modifiers_renaming_dict is not None:
-        df.loc[:, "VAR_MODIFIER"] = df["VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
-    df["VALUE"] = df["VALUE"].str.replace(",", "")  # Remove commas from values
-    if 'Q' in df.loc[1, "DATE"]:
-        # The date is quarterly
-        df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date
-    else:
-        # The date is annual
-        df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
-        df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date
 
     df_subset_no_modifier = df[df["VAR_MODIFIER"].isna()].drop(columns=['VAR_MODIFIER']).pivot(index=["COCODE", "DATE"],
                                                                                                columns="VAR",
-                                                                                               values="VALUE")
-    df_subset_with_modifier = df[(~(df["VAR_MODIFIER"].isna())) & (df["STATE"].isna())]. \
-        pivot(index=["COCODE", "DATE"], columns=["VAR", "VAR_MODIFIER"], values="VALUE")
-    df_subset_with_modifier_by_state = df[(~(df["VAR_MODIFIER"].isna())) & (~df["STATE"].isna())]. \
-        pivot(index=["COCODE", "DATE"], columns=["VAR", "VAR_MODIFIER", "STATE"], values="VALUE")
+                                                                                               values="VALUE")    
+    df_subset_with_modifier = None
+    df_subset_with_modifier_by_state = None
+
+    if ~ df["VAR_MODIFIER"].isna().all():  # If there are observations with VAR_MODIFIER
+        df[["VAR_MODIFIER", "STATE"]] = df. \
+            VAR_MODIFIER.str.split("|", expand=True)  # Split VAR_MODIFIER into VAR_MODIFIER and STATE
+        df["STATE"] = df["STATE"].str.split(":", expand=True)[1]  # Fix STATE column
+        if vars_modifiers_renaming_dict is not None:
+            df.loc[:, "VAR_MODIFIER"] = df["VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
+        df["VALUE"] = df["VALUE"].str.replace(",", "")  # Remove commas from values
+        if 'Q' in df.loc[1, "DATE"]:
+            # The date is quarterly
+            df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date
+        else:
+            # The date is annual
+            df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
+            df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date
+
+        df_subset_with_modifier = df[(~(df["VAR_MODIFIER"].isna())) & (df["STATE"].isna())]. \
+            pivot(index=["COCODE", "DATE"], columns=["VAR", "VAR_MODIFIER"], values="VALUE")
+
+        df_subset_with_modifier_by_state = df[(~(df["VAR_MODIFIER"].isna())) & (~df["STATE"].isna())]. \
+            pivot(index=["COCODE", "DATE"], columns=["VAR", "VAR_MODIFIER", "STATE"], values="VALUE")
+
     return df_subset_no_modifier, df_subset_with_modifier, df_subset_with_modifier_by_state
