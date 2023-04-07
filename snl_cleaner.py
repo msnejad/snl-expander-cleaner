@@ -52,6 +52,7 @@ naic_forms_variable_modifiers_renaming = {'AR: Total All Lines': 'ALL_LINES',
                                           "AR: Oth Comm'l Auto Liab": "COM_AUTO_LIAB_OTH",
                                           'AR: Pvt Pass Auto No-Fault': "PVT_AUTO_NF",
                                           'AR: Pvt Pass Auto Phys Damage': "PVT_AUTO_PHYS",
+                                          "Add'n Combo: Cat Risk": "ADN_CAT_RISK",
                                           }
 
 
@@ -144,11 +145,11 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     # and df_subset_with_modifier_by_state
     if "COCODE" in df_subset_no_date.columns:
         if df_subset_no_modifier is not None:
-            df_subset_no_modifier = df_subset_no_modifier.merge(df_no_date, on=key_name, how="left")
+            df_subset_no_modifier = df_subset_no_modifier.merge(df_subset_no_date, on=key_name, how="left")
         if df_subset_with_modifier is not None:
-            df_subset_with_modifier = df_subset_with_modifier.merge(df_no_date, on=key_name, how="left")
+            df_subset_with_modifier = df_subset_with_modifier.merge(df_subset_no_date, on=key_name, how="left")
         if df_subset_with_modifier_by_state is not None:
-            df_subset_with_modifier_by_state = df_subset_with_modifier_by_state.merge(df_no_date, on=key_name,
+            df_subset_with_modifier_by_state = df_subset_with_modifier_by_state.merge(df_subset_no_date, on=key_name,
                                                                                       how="left")
 
     return df_subset_no_date, df_subset_no_modifier, df_subset_with_modifier, df_subset_with_modifier_by_state
