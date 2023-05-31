@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-naic_forms_variables_renaming = {'
-                                 Total Assets ($000)': 'ASSETS',
+naic_forms_variables_renaming = {
+                                 'Total Assets ($000)': 'ASSETS',
                                  'Total Liabilities ($000)': 'LIAB',
                                  'Net Income ($000)': 'NI',
                                  'Net Underwriting Gains ($000)': 'NUG',
