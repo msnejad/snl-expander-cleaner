@@ -74,10 +74,11 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     :param vars_renaming_dict: a dictionary that matches SNL variable names to desirable variable names
     :param vars_modifiers_renaming_dict: a dictionary that matches SNL variable modifiers to desirable variable
     modifiers
-    :return: This function organizes the SNL exported tables to three subtables:
-        1. df_subset_no_modifier is a COCODE-VAR-DATE-VALUE table for observations with no VAR_MODIFIER
-        2. df_subset_with_modifier is a COCODE-VAR-VAR_MODIFIER-DATE-VALUE table for observations with VAR_MODIFIER
-        3. df_subset_with_modifier_by_state is a COCODE-VAR-VAR_MODIFIER-STATE-DATE-VALUE table for observations with
+    :return: This function organizes the SNL exported tables to 4 subtables:
+        1. df_subset_no_date is a COCODE-VAR-VALUE table for observations with no DATE
+        2. df_subset_no_modifier is a COCODE-VAR-DATE-VALUE table for observations with no VAR_MODIFIER
+        3. df_subset_with_modifier is a COCODE-VAR-VAR_MODIFIER-DATE-VALUE table for observations with VAR_MODIFIER
+        4. df_subset_with_modifier_by_state is a COCODE-VAR-VAR_MODIFIER-STATE-DATE-VALUE table for observations with
          VAR_MODIFIER and STATE
     """
     df = pd.read_csv(csv_file_path, encoding_errors='ignore', header=None, low_memory=False)  # Read the csv file
@@ -88,6 +89,10 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     df.columns = [var_names, modifier, period]  # Set column names
     df = df.iloc[3:, ]  # Drop the first three rows after setting them as column names
     df = df.iloc[:, 1:]  # Drop the entity name
+
+    # Rename the first level of columns that is "SNL Statutory Entity Key " to "S&P Statutory Entity Key "
+    df.columns = df.columns.set_levels(
+        df.columns.levels[0].str.replace('SNL Statutory Entity Key ', 'S&P Statutory Entity Key '), level=0)
 
     # Set record key to the front
     if record_key == "NAIC_COCODE":
@@ -119,6 +124,14 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     df_subset_no_date = df[df["DATE"].isna()].drop(columns=['DATE']).pivot(index=key_name, columns="VAR",
                                                                            values="VALUE")
     df = df[~df["DATE"].isna()]  # Drop rows without date
+    df["VALUE"] = df["VALUE"].str.replace(",", "")  # Remove commas from values
+    if 'Q' in df.iloc[1]["DATE"]:
+        # The date is quarterly
+        df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date
+    else:
+        # The date is annual
+        df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
+        df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date
     df_subset_no_modifier = df[(df["VAR_MODIFIER"].isna()) & (~df["DATE"].isna())].drop(columns=['VAR_MODIFIER']).pivot(
         index=[key_name, "DATE"],
         columns="VAR",
@@ -126,26 +139,36 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     df_subset_with_modifier = None
     df_subset_with_modifier_by_state = None
 
-    if ~ df["VAR_MODIFIER"].isna().all():  # If there are observations with VAR_MODIFIER
-        df[["VAR_MODIFIER", "STATE"]] = df. \
-            VAR_MODIFIER.str.split("|", expand=True)  # Split VAR_MODIFIER into VAR_MODIFIER and STATE
-        df["STATE"] = df["STATE"].str.split(":", expand=True)[1]  # Fix STATE column
-        if vars_modifiers_renaming_dict is not None:
-            df.loc[:, "VAR_MODIFIER"] = df["VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
-        df["VALUE"] = df["VALUE"].str.replace(",", "")  # Remove commas from values
-        if 'Q' in df.iloc[1]["DATE"]:
-            # The date is quarterly
-            df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date
-        else:
-            # The date is annual
-            df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
-            df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date
+    if ~df["VAR_MODIFIER"].isna().all():  # If there are observations with VAR_MODIFIER
 
-        df_subset_with_modifier = df[(~(df["VAR_MODIFIER"].isna())) & (df["STATE"].isna())]. \
-            pivot(index=[key_name, "DATE"], columns=["VAR", "VAR_MODIFIER"], values="VALUE")
+        # drop rows with NaN values in VAR_MODIFIER
+        df = df[~df["VAR_MODIFIER"].isna()]
 
-        df_subset_with_modifier_by_state = df[(~(df["VAR_MODIFIER"].isna())) & (~df["STATE"].isna())]. \
-            pivot(index=[key_name, "DATE"], columns=["VAR", "VAR_MODIFIER", "STATE"], values="VALUE")
+        # define df_subset_with_modifier as rows in df whose VAR_MODIFIER does not include |
+        df_subset_with_modifier = df[~df["VAR_MODIFIER"].str.contains("\|")]
+        df_subset_with_modifier_by_state = df[df["VAR_MODIFIER"].str.contains("\|")]
+
+        # Fix df_subset_with_modifier
+        if df_subset_with_modifier.shape[0] > 0:
+            if vars_modifiers_renaming_dict is not None:
+                df_subset_with_modifier.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier["VAR_MODIFIER"].replace(
+                    vars_modifiers_renaming_dict)
+
+            df_subset_with_modifier = df_subset_with_modifier.pivot(index=[key_name, "DATE"],
+                                                                    columns=["VAR", "VAR_MODIFIER"], values="VALUE")
+
+        # Fix df_subset_with_modifier_by_state
+        if df_subset_with_modifier_by_state.shape[0] > 0:
+            df_subset_with_modifier_by_state[["VAR_MODIFIER", "STATE"]] = df_subset_with_modifier_by_state. \
+                VAR_MODIFIER.str.split("|", expand=True)  # Split VAR_MODIFIER into VAR_MODIFIER and STATE
+            df_subset_with_modifier_by_state["STATE"] = \
+                df_subset_with_modifier_by_state["STATE"].str.split(":", expand=True)[1]  # Fix STATE column
+            if vars_modifiers_renaming_dict is not None:
+                df_subset_with_modifier_by_state.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier_by_state[
+                    "VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
+            df_subset_with_modifier_by_state = df_subset_with_modifier_by_state.pivot(index=[key_name, "DATE"],
+                                                                                      columns=["VAR", "VAR_MODIFIER",
+                                                                                               "STATE"], values="VALUE")
 
     # If COCODE is in df_subset_no_date, merge it with df_subset_no_modifier, df_subset_with_modifier,
     # and df_subset_with_modifier_by_state
