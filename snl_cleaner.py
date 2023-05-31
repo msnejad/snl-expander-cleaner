@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 
-naic_forms_variables_renaming = {'Net Total Assets ($000)': 'ASSETS',
+naic_forms_variables_renaming = {'
+                                 Total Assets ($000)': 'ASSETS',
                                  'Total Liabilities ($000)': 'LIAB',
                                  'Net Income ($000)': 'NI',
                                  'Net Underwriting Gains ($000)': 'NUG',
@@ -18,9 +19,14 @@ naic_forms_variables_renaming = {'Net Total Assets ($000)': 'ASSETS',
                                  'Bonds: Short Term and Cash Equivalent Bonds ($000)': 'SBONDS_CV',
                                  'Pref Stock: Carrying Value ($000)': 'PS_CV',
                                  'Cash Cash Equivalent and Short Term Assets ($000)': 'CASH',
-                                 'Auth Control Level Risk Based Capital ($000)': 'Auth_RBC',
                                  'Adjusted Capital ($000)': 'ADJCAP',
+                                 'Auth Control Level Risk Based Capital ($000)': 'AUTH_RBC',
+                                 'CAL Risk Based Capital Ratio (%)': 'CAL_RBC',
                                  'ACL Risk Based Capital Ratio (%)': 'RBC',
+                                 'Surplus as Regards Policyholders ($000)': 'SURPLUS',
+                                 'Loss & Loss Adj Exp Reserves ($000)': 'RESERVES',
+                                 'Net Investment Income Earned ($000)': 'INV_INC',
+                                 'Net Yield on Invested Assets (%)': 'INV_YIELD',
                                  'Net Adm Cash & Invested Assets ($000)': 'ADM_CASH_INVSTD_ASSETS',
                                  'Subtotal: Cash & Invested Assets ($000)': 'CASH_INVSTD_ASSETS',
                                  'Dividends Paid on Direct Business ($000)': 'DIV',
