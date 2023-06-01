@@ -62,9 +62,8 @@ naic_forms_variable_modifiers_renaming = {'AR: Total All Lines': 'ALL_LINES',
                                           'AR: Homeowners MP': "HO",
                                           }
 
-
 def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
-                        vars_modifiers_renaming_dict=None):
+                        vars_modifiers_renaming_dict=None, convert_values_to_number=True):
     """
     In tables exported from SNL, the four rows are the following: Variable name, Variable SNL code, Date, and Variable
     modifier. Variable modifier can include line of business and state, and if it includes both they are separated by a
@@ -75,6 +74,7 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     :param vars_renaming_dict: a dictionary that matches SNL variable names to desirable variable names
     :param vars_modifiers_renaming_dict: a dictionary that matches SNL variable modifiers to desirable variable
     modifiers
+    :param convert_values_to_number: if True, the function will try to convert the values to numbers
     :return: This function organizes the SNL exported tables to 4 subtables:
         1. df_subset_no_date is a COCODE-VAR-VALUE table for observations with no DATE
         2. df_subset_no_modifier is a COCODE-VAR-DATE-VALUE table for observations with no VAR_MODIFIER
@@ -125,14 +125,16 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     df_subset_no_date = df[df["DATE"].isna()].drop(columns=['DATE']).pivot(index=key_name, columns="VAR",
                                                                            values="VALUE")
     df = df[~df["DATE"].isna()]  # Drop rows without date
-    df["VALUE"] = df["VALUE"].str.replace(",", "")  # Remove commas from values
+    if convert_values_to_number:
+        df["VALUE"] = pd.to_numeric(df["VALUE"].str.replace(",", ""),
+                                    errors="coerce")  # Remove commas from values and convert to numeric
     if 'Q' in df.iloc[1]["DATE"]:
         # The date is quarterly
-        df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date
+        df["DATE"] = pd.to_datetime(pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date)
     else:
         # The date is annual
         df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
-        df["DATE"] = pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date
+        df["DATE"] = pd.to_datetime(pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date)
     df_subset_no_modifier = df[(df["VAR_MODIFIER"].isna()) & (~df["DATE"].isna())].drop(columns=['VAR_MODIFIER']).pivot(
         index=[key_name, "DATE"],
         columns="VAR",
