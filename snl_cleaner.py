@@ -59,6 +59,7 @@ naic_forms_variable_modifiers_renaming = {'AR: Total All Lines': 'ALL_LINES',
                                           'AR: Pvt Pass Auto No-Fault': "PVT_AUTO_NF",
                                           'AR: Pvt Pass Auto Phys Damage': "PVT_AUTO_PHYS",
                                           "Add'n Combo: Cat Risk": "ADN_CAT_RISK",
+                                          'AR: Homeowners MP': "HO",
                                           }
 
 
