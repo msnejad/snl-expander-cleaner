@@ -174,9 +174,9 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
                                                                                       columns=["VAR", "VAR_MODIFIER",
                                                                                                "STATE"], values="VALUE")
 
-    # If COCODE is in df_subset_no_date, merge it with df_subset_no_modifier, df_subset_with_modifier,
+    # If key_name is in df_subset_no_date, merge it with df_subset_no_modifier, df_subset_with_modifier,
     # and df_subset_with_modifier_by_state
-    if "COCODE" in df_subset_no_date.columns:
+    if key_name in df_subset_no_date.columns:
         if df_subset_no_modifier is not None:
             df_subset_no_modifier = df_subset_no_modifier.merge(df_subset_no_date, on=key_name, how="left")
         if df_subset_with_modifier is not None:
