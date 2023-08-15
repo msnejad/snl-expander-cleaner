@@ -65,17 +65,18 @@ naic_forms_variable_modifiers_renaming = {'AR: Total All Lines': 'ALL_LINES',
 def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
                         vars_modifiers_renaming_dict=None, convert_values_to_number=True):
     """
-    In tables exported from SNL, the four rows are the following: Variable name, Variable SNL code, Date, and Variable
-    modifier. Variable modifier can include line of business and state, and if it includes both they are separated by a
-    colon (":").
-    :param csv_file_path: path to the csv file which must have the NAIC Company Code
-    :param record_key: the name of the record key column, can be either NAIC_COCODE or SNL_ENTITY_KEY. Use SNL_ENTITY_KEY
-    when the observations are not at the company level
+    This function organizes and cleans CSV files exported from SNL. The CSV file from SNL must have an identifier column 
+    (record key), either NAIC_COCODE or SNL_ENTITY_KEY. SNL-generated files have the following four rows at the top:
+    Variable name, Variable SNL code, Date, and Variable modifier. Variable modifier can include line of business and 
+    state, and if it includes both they are separated by a colon (":").
+    :param csv_file_path: path to the csv file
+    :param record_key: the name of the record key column, which can be either NAIC_COCODE or SNL_ENTITY_KEY. Use
+    SNL_ENTITY_KEY when the observations are not at the company level
     :param vars_renaming_dict: a dictionary that matches SNL variable names to desirable variable names
     :param vars_modifiers_renaming_dict: a dictionary that matches SNL variable modifiers to desirable variable
     modifiers
     :param convert_values_to_number: if True, the function will try to convert the values to numbers
-    :return: This function organizes the SNL exported tables to 4 subtables:
+    :return: This function organizes the SNL exported tables into 4 subtables:
         1. df_subset_no_date is a COCODE-VAR-VALUE table for observations with no DATE
         2. df_subset_no_modifier is a COCODE-VAR-DATE-VALUE table for observations with no VAR_MODIFIER
         3. df_subset_with_modifier is a COCODE-VAR-VAR_MODIFIER-DATE-VALUE table for observations with VAR_MODIFIER
