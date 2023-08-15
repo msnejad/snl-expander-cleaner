@@ -1,8 +1,9 @@
 # snl-expander-cleaner
-![image](https://github.com/msnejad/snl-expander-cleaner/assets/111385244/34571f58-7d74-4983-ae7f-81ab1de086c3)
+![image](https://github.com/msnejad/snl-expander-cleaner/assets/111385244/c44804bc-c210-4bb3-9d65-b1939c61dd99)
+
 The Screener/Data Wizard in S&P Capital IQ Pro Excel Addon makes retrieving insurance statutory filings much easier. However, if you try to download a large panel, particularly when you need the same data for several quarters or years, you reach the download limit:
 
-![image](https://github.com/msnejad/snl-expander-cleaner/assets/111385244/3fe12cc3-7a10-4614-95fd-d14e653e0742)
+![image](https://github.com/msnejad/snl-expander-cleaner/assets/111385244/ca434bd0-525c-474d-817f-94cd639e67ad)
 
 A roundabout is to use Excel formulas rather than the Wizard. "snl_expander.xlsm" is equipped with a VBA macro that generates these formulas and downloads the data in one query for you. Once you have downloaded the data, you can clean it and transform it into a tidy format using the "snl_cleaner.py" Python script.
 
