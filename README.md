@@ -4,8 +4,8 @@ The Screener/Data Wizard in S&P Capital IQ Pro Excel Addon makes retrieving insu
 
 ![image](https://github.com/msnejad/snl-expander-cleaner/assets/111385244/3fe12cc3-7a10-4614-95fd-d14e653e0742)
 
-A roundabout is to use Excel formulas rather than the Wizard. "snl_expander.xlsm" is equipped with a VBA macro that generates these formulas and downloads the data in one query for you. Once you have downloaded the data, you can 
+A roundabout is to use Excel formulas rather than the Wizard. "snl_expander.xlsm" is equipped with a VBA macro that generates these formulas and downloads the data in one query for you. Once you have downloaded the data, you can clean it and transform it into a tidy format using the "snl_cleaner.py" Python script.
 
 # How to use snl_expander.xlsm
-Use the wizard and choose all the data fields you need for only one period. For example, if you need Net Total Assets for 2005Q1 to 2022Q4, only choose one period, for instance, 2005Q1. Run the screener and export the data to the Excel sheet named "Original". Make sure to select cell A1 in the sheet before export. Now click the "Run SNL Expander" button and follow the instructions. The macro will ask you the time period you want, whether to save results in CSV/XLSX formats and saves outputs in the same folder.
+Use the wizard and choose all the data fields you need for only one period. For example, if you need Net Total Assets for 2005Q1 to 2022Q4, only choose one period, for instance, 2005Q1. Run the screener and export the data to the Excel sheet named "Original". Make sure to select cell A1 in the sheet before export. Now click the "Run SNL Expander" button and follow the instructions. The macro will ask you the period you want, whether to save results in CSV/XLSX formats, and saves outputs in the same folder.
 
