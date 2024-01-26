@@ -99,7 +99,7 @@ Sub snl_expander()
                 Columns(new_col).Insert
                 uws.Cells(2, new_col).Formula = uws.Cells(2, new_col - 1).Formula
                 uws.Cells(3, new_col).Value = uws.Cells(3, new_col - 1).Value
-                uws.Cells(5, new_col).Value = uws.Cells(5, new_col - 1).Value
+                uws.Cells(5, new_col).Formula = uws.Cells(5, new_col - 1).Formula
             End If
             uws.Cells(4, new_col) = iter
             counter = counter + 1
