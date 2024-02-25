@@ -187,9 +187,9 @@ naic_forms_variable_modifiers_renaming = {
 def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
                         vars_modifiers_renaming_dict=None, convert_values_to_number=True):
     """
-    This function organizes and cleans CSV files exported from SNL. The CSV file from SNL must have an identifier column 
+    This function organizes and cleans CSV files exported from SNL. The CSV file from SNL must have an identifier column
     (record key), either NAIC_COCODE or SNL_ENTITY_KEY. SNL-generated files have the following four rows at the top:
-    Variable name, Variable SNL code, Date, and Variable modifier. Variable modifier can include line of business and 
+    Variable name, Variable SNL code, Date, and Variable modifier. Variable modifier can include line of business and
     state, and if it includes both they are separated by a colon (":").
     :param csv_file_path: path to the csv file
     :param record_key: the name of the record key column, which can be either NAIC_COCODE or SNL_ENTITY_KEY. Use
@@ -235,7 +235,8 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     else:
         raise ValueError("record_key must be either NAIC_COCODE or SNL_ENTITY_KEY")
 
-    df = df.melt(id_vars=[df.columns[0]])  # Reshape the dataframe    
+    # drop the first two rows of df
+    df = df.melt(id_vars=[df.columns[0]])  # Reshape the dataframe
     df = df.reset_index(drop=True)  # Reset index
     df.columns = [key_name, 'VAR', 'VAR_MODIFIER', 'DATE', 'VALUE']
     df = df[~df[key_name].isna()]  # Drop rows without key
@@ -247,79 +248,81 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     df_subset_no_date = df[df["DATE"].isna()].drop(columns=['DATE']).pivot(index=key_name, columns="VAR",
                                                                            values="VALUE")
     df = df[~df["DATE"].isna()]  # Drop rows without date
-    if convert_values_to_number:
-        df["VALUE"] = pd.to_numeric(df["VALUE"].str.replace(",", ""),
-                                    errors="coerce")  # Remove commas from values and convert to numeric
-    if 'Q' in df.iloc[1]["DATE"]:
-        # The date is quarterly
-        df["DATE"] = pd.to_datetime(pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date)
-    else:
-        # The date is annual
-        df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
-        df["DATE"] = pd.to_datetime(pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date)
-    df_subset_no_modifier = df[(df["VAR_MODIFIER"].isna()) & (~df["DATE"].isna())].drop(columns=['VAR_MODIFIER']).pivot(
-        index=[key_name, "DATE"],
-        columns="VAR",
-        values="VALUE")
+    df_subset_no_modifier = None
     df_subset_with_modifier = None
     df_subset_with_modifier_by_modifier = None  # Two modifiers, usually VAR_MODIFIER and STATE
-
-    if ~df["VAR_MODIFIER"].isna().all():  # If there are observations with VAR_MODIFIER
-
-        # drop rows with NaN values in VAR_MODIFIER
-        df = df[~df["VAR_MODIFIER"].isna()]
-
-        # define df_subset_with_modifier as rows in df whose VAR_MODIFIER does not include |
-        df_subset_with_modifier = df[~df["VAR_MODIFIER"].str.contains("\|")]
-        df_subset_with_modifier_by_modifier = df[df["VAR_MODIFIER"].str.contains("\|")]
-
-        # Fix df_subset_with_modifier
-        if df_subset_with_modifier.shape[0] > 0:
-            if vars_modifiers_renaming_dict is not None:
-                df_subset_with_modifier.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier["VAR_MODIFIER"].replace(
-                    vars_modifiers_renaming_dict)
-
-            df_subset_with_modifier = df_subset_with_modifier.pivot(index=[key_name, "DATE"],
-                                                                    columns=["VAR", "VAR_MODIFIER"], values="VALUE")
-        # df_subset_with_modifier_by_modifier.iloc[1,:]
-        # Fix df_subset_with_modifier_by_modifier
-        if df_subset_with_modifier_by_modifier.shape[0] > 0:
-            df_subset_with_modifier_by_modifier[
-                ["VAR_MODIFIER", "VAR_MODIFIER2"]] = df_subset_with_modifier_by_modifier. \
-                VAR_MODIFIER.str.split("|", expand=True)  # Split VAR_MODIFIER into VAR_MODIFIER and VAR_MODIFIER2
-            var_modifier2_is_state = False
-            if df_subset_with_modifier_by_modifier["VAR_MODIFIER2"].str.contains(":").any():
-                # The second modifier is STATE
-                var_modifier2_is_state = True
-                df_subset_with_modifier_by_modifier["VAR_MODIFIER2"] = \
-                    df_subset_with_modifier_by_modifier["VAR_MODIFIER2"].str.split(":", expand=True)[
-                        0]  # Fix STATE column
-            if vars_modifiers_renaming_dict is not None:
-                df_subset_with_modifier_by_modifier.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier_by_modifier[
-                    "VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
-            if var_modifier2_is_state:
-                df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.rename(
-                    columns={"VAR_MODIFIER2": "STATE"})
-                df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.pivot(
-                    index=[key_name, "DATE"],
-                    columns=["VAR", "VAR_MODIFIER",
-                             "STATE"], values="VALUE")
-            else:
-                df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.pivot(
-                    index=[key_name, "DATE"],
-                    columns=["VAR", "VAR_MODIFIER",
-                             "VAR_MODIFIER2"], values="VALUE")
-
-    # If key_name is in df_subset_no_date, merge it with df_subset_no_modifier, df_subset_with_modifier,
-    # and df_subset_with_modifier_by_modifier
-    if key_name in df_subset_no_date.columns:
-        if df_subset_no_modifier is not None:
-            df_subset_no_modifier = df_subset_no_modifier.merge(df_subset_no_date, on=key_name, how="left")
-        if df_subset_with_modifier is not None:
-            df_subset_with_modifier = df_subset_with_modifier.merge(df_subset_no_date, on=key_name, how="left")
-        if df_subset_with_modifier_by_modifier is not None:
-            df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.merge(df_subset_no_date,
-                                                                                            on=key_name,
-                                                                                            how="left")
+    if df.empty is False:
+        if convert_values_to_number:
+            df["VALUE"] = pd.to_numeric(df["VALUE"].str.replace(",", ""),
+                                        errors="coerce")  # Remove commas from values and convert to numeric
+        if 'Q' in df.iloc[1]["DATE"]:
+            # The date is quarterly
+            df["DATE"] = pd.to_datetime(pd.to_datetime(df["DATE"]).dt.to_period('Q').dt.end_time.dt.date)
+        else:
+            # The date is annual
+            df["DATE"] = df["DATE"].str.replace("Y", "")  # Remove Y from years
+            df["DATE"] = pd.to_datetime(pd.to_datetime(df["DATE"]).dt.to_period('Y').dt.end_time.dt.date)
+        df_subset_no_modifier = df[(df["VAR_MODIFIER"].isna()) & (~df["DATE"].isna())].drop(columns=['VAR_MODIFIER']).pivot(
+            index=[key_name, "DATE"],
+            columns="VAR",
+            values="VALUE")        
+    
+        if ~df["VAR_MODIFIER"].isna().all():  # If there are observations with VAR_MODIFIER
+    
+            # drop rows with NaN values in VAR_MODIFIER
+            df = df[~df["VAR_MODIFIER"].isna()]
+    
+            # define df_subset_with_modifier as rows in df whose VAR_MODIFIER does not include |
+            df_subset_with_modifier = df[~df["VAR_MODIFIER"].str.contains("\|")]
+            df_subset_with_modifier_by_modifier = df[df["VAR_MODIFIER"].str.contains("\|")]
+    
+            # Fix df_subset_with_modifier
+            if df_subset_with_modifier.shape[0] > 0:
+                if vars_modifiers_renaming_dict is not None:
+                    df_subset_with_modifier.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier["VAR_MODIFIER"].replace(
+                        vars_modifiers_renaming_dict)
+    
+                df_subset_with_modifier = df_subset_with_modifier.pivot(index=[key_name, "DATE"],
+                                                                        columns=["VAR", "VAR_MODIFIER"], values="VALUE")
+            # df_subset_with_modifier_by_modifier.iloc[1,:]
+            # Fix df_subset_with_modifier_by_modifier
+            if df_subset_with_modifier_by_modifier.shape[0] > 0:
+                df_subset_with_modifier_by_modifier[
+                    ["VAR_MODIFIER", "VAR_MODIFIER2"]] = df_subset_with_modifier_by_modifier. \
+                    VAR_MODIFIER.str.split("|", expand=True)  # Split VAR_MODIFIER into VAR_MODIFIER and VAR_MODIFIER2
+                var_modifier2_is_state = False
+                if df_subset_with_modifier_by_modifier["VAR_MODIFIER2"].str.contains(":").any():
+                    # The second modifier is STATE
+                    var_modifier2_is_state = True
+                    df_subset_with_modifier_by_modifier["VAR_MODIFIER2"] = \
+                        df_subset_with_modifier_by_modifier["VAR_MODIFIER2"].str.split(":", expand=True)[
+                            0]  # Fix STATE column
+                if vars_modifiers_renaming_dict is not None:
+                    df_subset_with_modifier_by_modifier.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier_by_modifier[
+                        "VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
+                if var_modifier2_is_state:
+                    df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.rename(
+                        columns={"VAR_MODIFIER2": "STATE"})
+                    df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.pivot(
+                        index=[key_name, "DATE"],
+                        columns=["VAR", "VAR_MODIFIER",
+                                 "STATE"], values="VALUE")
+                else:
+                    df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.pivot(
+                        index=[key_name, "DATE"],
+                        columns=["VAR", "VAR_MODIFIER",
+                                 "VAR_MODIFIER2"], values="VALUE")
+    
+        # If key_name is in df_subset_no_date, merge it with df_subset_no_modifier, df_subset_with_modifier,
+        # and df_subset_with_modifier_by_modifier
+        if key_name in df_subset_no_date.columns:
+            if df_subset_no_modifier is not None:
+                df_subset_no_modifier = df_subset_no_modifier.merge(df_subset_no_date, on=key_name, how="left")
+            if df_subset_with_modifier is not None:
+                df_subset_with_modifier = df_subset_with_modifier.merge(df_subset_no_date, on=key_name, how="left")
+            if df_subset_with_modifier_by_modifier is not None:
+                df_subset_with_modifier_by_modifier = df_subset_with_modifier_by_modifier.merge(df_subset_no_date,
+                                                                                                on=key_name,
+                                                                                                how="left")
 
     return df_subset_no_date, df_subset_no_modifier, df_subset_with_modifier, df_subset_with_modifier_by_modifier
