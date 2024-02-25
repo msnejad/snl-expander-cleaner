@@ -235,8 +235,7 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
     else:
         raise ValueError("record_key must be either NAIC_COCODE or SNL_ENTITY_KEY")
 
-    df = df.melt(id_vars=[df.columns[0]])  # Reshape the dataframe
-    df = df.iloc[2:, ]  # Clean rows without data
+    df = df.melt(id_vars=[df.columns[0]])  # Reshape the dataframe    
     df = df.reset_index(drop=True)  # Reset index
     df.columns = [key_name, 'VAR', 'VAR_MODIFIER', 'DATE', 'VALUE']
     df = df[~df[key_name].isna()]  # Drop rows without key
