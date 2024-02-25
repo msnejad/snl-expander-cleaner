@@ -325,4 +325,13 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
                                                                                                 on=key_name,
                                                                                                 how="left")
 
+    # if column names end with a " ", remove the space
+    if df_subset_no_date is not None:
+        df_subset_no_date.columns = df_subset_no_date.columns.str.rstrip()
+    if df_subset_no_modifier is not None:
+        df_subset_no_modifier.columns = df_subset_no_modifier.columns.str.rstrip()
+    if df_subset_with_modifier is not None:
+        df_subset_with_modifier.columns = df_subset_with_modifier.columns.str.rstrip()
+    if df_subset_with_modifier_by_modifier is not None:
+        df_subset_with_modifier_by_modifier.columns = df_subset_with_modifier_by_modifier.columns.str.rstrip()
     return df_subset_no_date, df_subset_no_modifier, df_subset_with_modifier, df_subset_with_modifier_by_modifier
