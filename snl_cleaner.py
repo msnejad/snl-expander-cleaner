@@ -296,7 +296,7 @@ def organize_snl_export(csv_file_path, record_key, vars_renaming_dict=None,
                     var_modifier2_is_state = True
                     df_subset_with_modifier_by_modifier["VAR_MODIFIER2"] = \
                         df_subset_with_modifier_by_modifier["VAR_MODIFIER2"].str.split(":", expand=True)[
-                            0]  # Fix STATE column
+                            1]  # Fix STATE column
                 if vars_modifiers_renaming_dict is not None:
                     df_subset_with_modifier_by_modifier.loc[:, "VAR_MODIFIER"] = df_subset_with_modifier_by_modifier[
                         "VAR_MODIFIER"].replace(vars_modifiers_renaming_dict)
